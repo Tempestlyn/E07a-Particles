@@ -15,7 +15,7 @@ MARGIN = 30
 SCREEN_TITLE = "Particle Exercise"
 
 PARTICLE_MIN_SCALE = 0.01
-PARTICLE_MAX_SCALE = 0.08
+PARTICLE_MAX_SCALE = 0.03
 PARTICLE_MIN_X = -20
 PARTICLE_MAX_X = 20
 PARTICLE_VELOCITY_X = 0
@@ -39,38 +39,36 @@ class Particle(arcade.Sprite):
         self.ay = ay
         self.decay = decay
         self.color_pos = 0
-
+        self.froze = False
         self.particle_colors = [
-            (open_color.red_5, 4)
-            ,(open_color.red_4, 5)
-            ,(open_color.red_3, 6)
-            ,(open_color.red_2, 7)
-            ,(open_color.red_1, 8)
-            ,(open_color.teal_1, 8)
-            ,(open_color.teal_2, 7)
-            ,(open_color.teal_3, 6)
-            ,(open_color.teal_4, 5)
-            ,(open_color.teal_5, 4)
+            (open_color.white, 4)
+            ,(open_color.white, 5)
+            ,(open_color.white, 6)
+            ,(open_color.white, 7)
+            ,(open_color.white, 8)
+
         ]
         (self.color, self.lifetime) = self.particle_colors[self.color_pos]
         self.alive = True
         
     
     def update(self):
-        self.dx += self.ax
-        self.dy += self.ay
-        self.center_x += self.dx
-        self.center_y += self.dy
-        self.scale -= self.decay
-        if self.scale < self.decay:
-            self.scale = self.decay
-        self.lifetime -= 1
-        if self.lifetime <= 0:
-            self.color_pos += 1
-            if self.color_pos >= len(self.particle_colors):
-                self.alive = False
-            else:
-                (self.color, self.lifetime) = self.particle_colors[self.color_pos]
+        if self.froze != True:
+            #self.dx += self.ax
+            #self.dy += self.ay
+            self.center_x -= self.dx
+            self.center_y -= self.dy
+            self.dx += 0.01
+            #self.scale -= self.decay
+            if self.scale < self.decay:
+                self.scale = self.decay
+            self.lifetime -= 1
+            if self.lifetime <= 0:
+                self.color_pos += 1
+                if self.color_pos >= len(self.particle_colors):
+                    self.alive = False
+                else:
+                    (self.color, self.lifetime) = self.particle_colors[self.color_pos]
 
 
 
@@ -101,9 +99,9 @@ class Window(arcade.Window):
         self.particle_list.update()
         if self.mouse_down:
             #generate a new particle
-            x = self.x + random.uniform(PARTICLE_MIN_X, PARTICLE_MAX_X)
+            x = self.x + random.uniform(PARTICLE_MIN_X - 300, PARTICLE_MAX_X + 300)
             y = self.y
-            dx = PARTICLE_VELOCITY_X
+            dx = random.uniform(-1,1)
             dy = PARTICLE_VELOCITY_Y
             ax = random.uniform(PARTICLE_MIN_AX,PARTICLE_MAX_AX)
             ay = random.uniform(PARTICLE_MIN_AY,PARTICLE_MAX_AY)
@@ -111,17 +109,25 @@ class Window(arcade.Window):
             scale = random.uniform(PARTICLE_MIN_SCALE,PARTICLE_MAX_SCALE)
             #Particle(asset, sprite scale, initial position [x], initial position [y], velocity [x], velocity [y], acceleration [x], acceleration [y], scale decay)
             particle = Particle('circle_05',scale,x,y,dx,dy,ax,ay,decay)
-
+            
             self.particle_list.append(particle)
 
         for p in self.particle_list:
+
+            collisions = p.collides_with_list(self.particle_list)
+            for c in collisions:
+                if c.froze == True:
+                    p.froze = True
             #if the particle is off the edge of the screen, kill it
             if p.center_x < -50 or p.center_x > SCREEN_WIDTH + 50 or p.center_y < -50 or p.center_y > SCREEN_HEIGHT + 50:
-                p.kill()
+                p.dx = 0
+                p.dy = 0
+                p.froze = True
             #if it has reached the end of its life
             if not p.alive:
                 p.kill
-
+            
+            
 
     def on_draw(self):
         arcade.start_render()
